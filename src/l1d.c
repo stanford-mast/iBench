@@ -1,3 +1,26 @@
+/** $lic$
+ * Copyright (C) 2016-2017 by The Board of Trustees of Cornell University
+ * Copyright (C) 2013-2016 by The Board of Trustees of Stanford University
+ *  
+ * This file is part of iBench. 
+ *  
+ * iBench is free software; you can redistribute it and/or modify it under the
+ * terms of the Modified BSD-3 License as published by the Open Source Initiative.
+ *  
+ * If you use this software in your research, we request that you reference
+ * the iBench paper ("iBench: Quantifying Interference for Datacenter Applications", 
+ * Delimitrou and Kozyrakis, IISWC'13, September 2013) as the source of the benchmark 
+ * suite in any publications that use this software, and that
+ * you send us a citation of your work.
+ *  
+ * iBench is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the BSD-3 License for more details.
+ *  
+ * You should have received a copy of the Modified BSD-3 License along with
+ * this program. If not, see <https://opensource.org/licenses/BSD-3-Clause>.
+ **/
+
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -52,6 +75,11 @@ int cache_size_kb(void) {
 }
 
 int main(int argc, char **argv) {
+	//struct timespec tim;
+	//tim.tv_sec = 1;
+	//tim.tv_nsec = 500;
+	timespec sleepValue = {0};
+	
 	char* volatile block;
 	int CACHE_SIZE = cache_size_kb(); 
 	printf("L1d cache size: %dKB\n", CACHE_SIZE); 
@@ -62,13 +90,17 @@ int main(int argc, char **argv) {
 	if (argc < 2) { 
 		printf("Usage: ./l1d <duration in sec>\n"); 
 		exit(0); 
-	}	
-	unsigned long int usr_timer = getNs() + NS_PER_S*atoi(argv[1]);
+	}
 
+	unsigned long int usr_timer = getNs() + NS_PER_S*atoi(argv[1]);
+	printf("%lu\n", usr_timer);
 
 	while (getNs() < usr_timer) {
 		memcpy(block, block+CACHE_SIZE/2, CACHE_SIZE/2);
-		sleep((float)(usr_timer-getNs())/usr_timer);
+		sleepValue.tv_nsec = (usr_timer-getNs())/usr_timer;
+		nanosleep(&sleepValue, NULL);
+		//nanosleep((usr_timer-getNs())/usr_timer);
+		//nanosleep((const struct timespec[]){{0, ((usr_timer-getNs())/usr_timer)}}, NULL);
 	}
 	return 0;
 }
