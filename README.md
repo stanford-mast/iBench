@@ -7,7 +7,7 @@ You can find more details about iBench in our IISWC 2013 paper: http://web.stanf
 
 # License & Copyright
 
-iBench is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
+iBench is free software; you can redistribute it and/or modify it under the terms of the BSD License as published by the Open Source Initiative, revised version. 
 
 iBench was originally written by Christina Delimitrou at Stanford University, and per Stanford University policy, the copyright of this original code remains with Stanford (specifically, the Board of Trustees of Leland Stanford Junior University). 
 

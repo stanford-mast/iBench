@@ -75,9 +75,6 @@ int cache_size_kb(void) {
 }
 
 int main(int argc, char **argv) {
-	//struct timespec tim;
-	//tim.tv_sec = 1;
-	//tim.tv_nsec = 500;
 	timespec sleepValue = {0};
 	
 	char* volatile block;
@@ -93,14 +90,12 @@ int main(int argc, char **argv) {
 	}
 
 	unsigned long int usr_timer = getNs() + NS_PER_S*atoi(argv[1]);
-	printf("%lu\n", usr_timer);
+	//printf("%lu\n", usr_timer);
 
 	while (getNs() < usr_timer) {
 		memcpy(block, block+CACHE_SIZE/2, CACHE_SIZE/2);
 		sleepValue.tv_nsec = (usr_timer-getNs())/usr_timer;
 		nanosleep(&sleepValue, NULL);
-		//nanosleep((usr_timer-getNs())/usr_timer);
-		//nanosleep((const struct timespec[]){{0, ((usr_timer-getNs())/usr_timer)}}, NULL);
 	}
 	return 0;
 }
