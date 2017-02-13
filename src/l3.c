@@ -76,14 +76,14 @@ int main(int argc, char **argv) {
 
 	char* volatile block;
 	int CACHE_SIZE = cache_size_kb(); 
-	printf("%d\n", CACHE_SIZE);
+	printf("Cache size: %dKB\n", CACHE_SIZE);
 
 	/*Usage: ./l3 <duration in sec>*/
 	if (argc < 2) { 
 		printf("Usage: ./l3 <duration in sec>\n"); 
 		exit(0); 
 	}	
-	block = (char*)mmap(NULL, CACHE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+	block = (char*)mmap(NULL, CACHE_SIZE * 1024, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 
 	int usr_timer = atoi(argv[1]);
 	double time_spent = 0.0; 
