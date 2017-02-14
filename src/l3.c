@@ -29,54 +29,70 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <sched.h>
 
-//#define CACHE_SIZE 2*1024*1024
+// Returns the size of the L3 cache in bytes, otherwise -1 on error.
+int cache_size() {
+    // We grab the cache size from cpu 0, assuming that all cpu caches are the
+    // same size.
+    const char* cache_size_path =
+        "/sys/devices/system/cpu/cpu0/cache/index3/size";
 
-void remove_all_chars(char* str, char c) {
-	char *pr = str, *pw = str;
-	while (*pr) {
-		*pw = *pr++;
-		pw += (*pw != c);
-	}
-	*pw = '\0';
-}
-
-int cache_size_kb(void) {
-	char line[512], buffer[32];
-	int column;
-	FILE *cpuinfo;
-
-
-	if (!(cpuinfo = fopen("/proc/cpuinfo", "r"))) {
-		perror("/proc/cpuinfo: fopen");
+	FILE *cache_size_fd;
+	if (!(cache_size_fd = fopen(cache_size_path, "r"))) {
+		perror("could not open cache size file");
 		return -1;
 	}
 
-
-	while (fgets(line, sizeof(line), cpuinfo)) {
-		if (strstr(line, "cache size")) {
-			char* colStr;
-			colStr = strstr(line, ":");
-			remove_all_chars(colStr, ':'); 
-			remove_all_chars(colStr, 'K'); 
-			remove_all_chars(colStr, 'B');
-			column = atoi(colStr); 
-			//colStr = strstr(colStr, "KB");
-			//strncpy(buffer, line + column + 1, sizeof(buffer));
-			fclose(cpuinfo);
-			return (int) column; //(int)strtol(buffer, NULL, 10);
-		}
+	char line[512];
+	if(!fgets(line, 512, cache_size_fd)) {
+		fclose(cache_size_fd);
+		perror("could not read from cache size file");
+		return -1;
 	}
-	fclose(cpuinfo);
-	return -1;
+
+	// Strip newline
+	const int newline_pos = strlen(line) - 1;
+	if (line[newline_pos] == '\n') {
+		line[newline_pos] = '\0';
+	}
+
+	// Get multiplier
+	int multiplier = 1;
+	const int multiplier_pos = newline_pos - 1;
+	switch (line[multiplier_pos]) {
+		case 'K':
+			multiplier = 1024;
+		break;
+		case 'M':
+			multiplier = 1024 * 1024;
+		break;
+		case 'G':
+			multiplier = 1024 * 1024 * 1024;
+		break;
+	}
+
+	// Remove multiplier
+	if (multiplier != 1) {
+		line[multiplier_pos] = '\0';
+	}
+
+	// Line should now be clear of non-numeric characters
+	int value = atoi(line);
+
+	int cache_size = value * multiplier;
+
+	fclose(cache_size_fd);
+
+	return cache_size;
 }
 
 int main(int argc, char **argv) {
-	timespec sleepValue = {0};
-
 	char* volatile block;
-	int CACHE_SIZE = cache_size_kb(); 
-	printf("Cache size: %dKB\n", CACHE_SIZE);
+  
+	int CACHE_SIZE = cache_size(); 
+	printf("Detected L3 cache size: %d bytes\n", CACHE_SIZE);
+
 
 	/*Usage: ./l3 <duration in sec>*/
 	if (argc < 2) { 
@@ -93,8 +109,8 @@ int main(int argc, char **argv) {
 	while (time_spent < usr_timer) {
   		begin = clock();
 		memcpy(block, block+CACHE_SIZE/2, CACHE_SIZE/2);
-		//sleepValue.tv_nsec = (usr_timer-getNs())/usr_timer; 
- 		//nanosleep(&sleepValue, NULL);
+		// note: replaced original throttling sleep with yielding that gives chance ther workloads to run
+		sched_yield(); // sleep((float)(usr_timer-time_spent)/usr_timer);
 		end = clock();
   		time_spent += (double)(end - begin) / CLOCKS_PER_SEC;
 	}
